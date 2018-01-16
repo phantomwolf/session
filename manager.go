@@ -12,13 +12,16 @@ type Manager struct {
 }
 
 func NewManager(client *redis.Client) *Manager {
+	return &Manager{
+		client: client,
+	}
 }
 
 // Once we got session id in cookie, load session from redis
-func (m *Manager) LoadSession(id string) (*Session, error) {
+func (m *Manager) Find(id string) (*Session, error) {
 	values, err := m.client.HGetAll(id).Result()
 	if err != nil || len(values) == 0 {
-		log.Fatalf("[session] No such session: %s\n", id)
+		log.Fatalf("[session] Session %s not found\n", id)
 		return nil, err
 	}
 
@@ -42,7 +45,8 @@ func (m *Manager) LoadSession(id string) (*Session, error) {
 	}, nil
 }
 
-func (m *Manager) SaveSession(s *Session) error {
+// Save session to redis
+func (m *Manager) Save(s *Session) error {
 	id := s.ID.String()
 	ok, err := m.client.HSet(
 		id,
@@ -55,11 +59,25 @@ func (m *Manager) SaveSession(s *Session) error {
 	}
 
 	for k, v := range s.Values {
-		ok, err = client.HSet(id, k, v).Result()
+		ok, err = m.client.HSet(id, k, v).Result()
 		if err != nil || ok == false {
 			log.Fatalf("[session] Failed to set %s to %s for session %s\n", k, v, id)
 			return err
 		}
+	}
+	return nil
+}
+
+// Delete session
+func (m *Manager) Delete(s *Session) error {
+	id := s.ID.String()
+	ret, err := m.client.Del(id).Result()
+	if err != nil {
+		log.Fatalf("[session] Failed to delete session %s\n", id)
+		return err
+	}
+	if ret == 0 {
+		log.Printf("[session] Session %s already deleted\n", id)
 	}
 	return nil
 }

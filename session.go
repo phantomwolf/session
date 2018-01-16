@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/satori/go.uuid"
+	"log"
 	"time"
 )
 
