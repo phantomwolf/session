@@ -3,11 +3,17 @@ package session
 import (
 	"github.com/go-redis/redis"
 	"github.com/satori/go.uuid"
+	"http"
 	"log"
 	"time"
 )
 
-type Manager struct {
+type Storage interface {
+	Get(id string) (*Session, error)
+	GetByRequest(r *http.Request) (*Session, error)
+}
+
+type Storage struct {
 	client *redis.Client
 }
 
