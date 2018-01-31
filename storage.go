@@ -3,18 +3,26 @@ package session
 import (
 	"github.com/go-redis/redis"
 	"github.com/satori/go.uuid"
-	"http"
 	"log"
 	"time"
 )
 
 type Storage interface {
-	Get(id string) (*Session, error)
-	GetByRequest(r *http.Request) (*Session, error)
+	// Return nil if not found
+	Load(key string) map[string]string
+	Save(key string, map[string]string) error
 }
 
-type Storage struct {
-	client *redis.Client
+type redisStorage struct {
+	backend *redis.Client
+}
+
+func NewStorage(backend string) Storage {
+	var store Storage
+	switch backend {
+	case "redis":
+		store = &redisStorage{backend: }
+	}
 }
 
 func NewManager(client *redis.Client) *Manager {

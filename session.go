@@ -10,9 +10,10 @@ type Session struct {
 	ID      uuid.UUID
 	Values  map[string]string
 	Expires time.Time
+	Store   Storage
 }
 
-func New(expires time.Time) (*Session, error) {
+func New(expires time.Time, store Storage) (*Session, error) {
 	// Generate version 4 uuid
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -22,6 +23,7 @@ func New(expires time.Time) (*Session, error) {
 		ID:      id,
 		Values:  map[string]string{},
 		Expires: expires,
+		Store:   store,
 	}, nil
 }
 
