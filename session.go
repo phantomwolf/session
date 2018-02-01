@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/satori/go.uuid"
+	"log"
 	"time"
 )
 
@@ -11,43 +12,44 @@ const (
 
 type Session struct {
 	// unique session id, used as redis key
-	id     uuid.UUID
-	values map[string]string
-	store  Storage
+	id      uuid.UUID
+	values  map[string]string
+	backend Backend
 }
 
-func New(store Storage) (*Session, error) {
-	// Generate version 4 uuid
+func New(backend Backend) (*Session, error) {
 	id, err := uuid.NewV4()
 	if err != nil {
 		log.Printf("[session/session.go] UUID(version 4) generation failed\n")
 		return nil, err
 	}
-	values := make(map[string]string)
+
 	sess := &Session{
-		id:     id,
-		values: values,
-		store:  store,
+		id:      id,
+		values:  make(map[string]string),
+		backend: backend,
 	}
+	sess.SetExpireAfter(time.Hour * 2)
 	return sess, nil
 }
 
-func Load(id string, store Storage) (*Session, error) {
+func Load(id string, backend Backend) (*Session, error) {
 	guid, err := uuid.FromString(id)
 	if err != nil {
 		log.Printf("[session/session.go] Invalid session id %s: %s\n", id, err.Error())
 		return nil, err
 	}
 
-	values, err := store.Load(id)
+	values, err := backend.Load(id)
 	if err != nil {
 		log.Printf("[session/session.go] Loading session %s failed: %s\n", id, err.Error())
 		return nil, err
 	}
+
 	sess := &Session{
-		id:     guid,
-		values: values,
-		store:  store,
+		id:      guid,
+		values:  values,
+		backend: backend,
 	}
 	return sess, nil
 }
@@ -74,7 +76,7 @@ func (sess *Session) DelVal(key string) {
 
 func (sess *Session) Delete() error {
 	id := sess.ID()
-	err := sess.store.Delete(id)
+	err := sess.backend.Delete(id)
 	if err != nil {
 		log.Printf("[session/session.go] Deleting session %s failed: %s\n", id, err.Error())
 	}
@@ -83,7 +85,7 @@ func (sess *Session) Delete() error {
 
 func (sess *Session) Save() error {
 	id := sess.ID()
-	err := sess.store.Save(id, sess.values)
+	err := sess.backend.Save(id, sess.values)
 	if err != nil {
 		log.Printf("[session/session.go] Saving session %s failed: %s\n", id, err.Error())
 	}
@@ -91,14 +93,15 @@ func (sess *Session) Save() error {
 }
 
 func (sess *Session) Expired() bool {
-	expires, ok := time.Parse(time.RFC1123, sess.Get(keyExpires))
+	val, ok := sess.GetVal(keyExpires)
 	if ok == false {
-		panic("[session/session.go] No expire time in session")
+		return true
 	}
-	if expires.After(time.Now()) {
-		return false
+	expire, err := time.Parse(time.RFC1123, val)
+	if err != nil || expire.Before(time.Now()) {
+		return true
 	}
-	return true
+	return false
 }
 
 func (sess *Session) SetExpire(t time.Time) {
@@ -106,6 +109,5 @@ func (sess *Session) SetExpire(t time.Time) {
 }
 
 func (sess *Session) SetExpireAfter(d time.Duration) {
-	expire := time.Now().Add(d)
-	sess.SetExpire(expire)
+	sess.SetExpire(time.Now().Add(d))
 }
