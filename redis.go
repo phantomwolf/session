@@ -6,7 +6,7 @@ import (
 )
 
 var redisClient *redis.Client
-var once sync.Once
+var redisOnce sync.Once
 
 func RedisClient() *redis.Client {
 	once.Do(func() {
