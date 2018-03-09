@@ -2,15 +2,15 @@ package session
 
 import (
 	"errors"
-	"log"
-	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Repository interface {
 	Add(sess *Session) error
 	Update(sess *Session) error
-	Remove(uid uint64) error
-	Find(uid uint64) (*Session, error)
+	Remove(id string) error
+	Find(id string) (*Session, error)
 }
 
 type repository struct {
@@ -21,37 +21,30 @@ func NewRepository(storage Storage) Repository {
 	return &repository{storage: storage}
 }
 
-func (repo *repository) Find(uid uint64) (*Session, error) {
-	key := strconv.FormatUint(uid, 10)
-	data, err := repo.storage.Load(key)
+func (repo *repository) Find(id string) (*Session, error) {
+	data, err := repo.storage.Load(id)
 	if err != nil {
+		log.Debugf("[repository.go:Find] Loading %s failed: %s\n", id, err.Error())
 		return nil, err
 	}
-
-	sess, err := FromStorage(key, data)
-	return sess, err
+	return Load(id, data)
 }
 
-func (repo *repository) Remove(uid uint64) error {
-	key := strconv.FormatUint(uid, 10)
-	err := repo.storage.Delete(key)
-	return err
+func (repo *repository) Remove(id string) error {
+	return repo.storage.Delete(id)
 }
 
 func (repo *repository) Update(sess *Session) error {
-	key, data := sess.ToStorage()
-	err := repo.storage.Save(key, data)
-	if err != nil {
-		log.Printf("[session/repository.go] Session %s saving failure\n", key)
+	if err := repo.storage.Save(sess.Id(), sess.Uid(), sess.ToMap()); err != nil {
+		log.Printf("[repository.go:Update] Updating session %s failed: %s\n", sess.Id(), err.Error())
 		return err
 	}
 	return nil
 }
 
 func (repo *repository) Add(sess *Session) error {
-	key, data := sess.ToStorage()
-	if repo.storage.Exists(key) {
-		log.Printf("[session/repository.go] Session %s already exists\n", key)
+	if repo.storage.Exists(sess.Id()) {
+		log.Printf("[repository.go] Session %s already exists\n", sess.Id())
 		return errors.New("Session already exists")
 	}
 
