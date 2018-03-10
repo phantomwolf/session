@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	ErrSessionMissingUid = errors.New("User id missing in session")
+	ErrSessionMissingUID = errors.New("User id missing in session")
 	ErrSessionExists     = errors.New("Session already exists")
 )
 
@@ -55,7 +55,7 @@ func Load(key string, data map[string]string) (*Session, error) {
 	uid, ok := data[uidKey]
 	if !ok {
 		log.Debugf("[session.go:Load] User id not found in session %s\n", key)
-		return nil, ErrSessionMissingUid
+		return nil, ErrSessionMissingUID
 	}
 	delete(data, uidKey)
 
@@ -83,22 +83,22 @@ func (sess *Session) ToMap() map[string]interface{} {
 		data[k] = v
 	}
 	data[expireKey] = sess.expire.Format(time.RFC1123)
-	data[uidKey] = sess.Uid()
+	data[uidKey] = sess.UID()
 	return data
 }
 
-// Id returns the string representation of session id(uuid)
-func (sess *Session) Id() string {
+// ID returns the string representation of session id(uuid)
+func (sess *Session) ID() string {
 	return sess.id.String()
 }
 
-// Uid returns the user id which the session belongs to
-func (sess *Session) Uid() string {
+// UID returns the user id which the session belongs to
+func (sess *Session) UID() string {
 	return sess.uid
 }
 
-// SetUid sets the Session's uid to <uid>
-func (sess *Session) SetUid(uid string) {
+// SetUID sets the Session's uid to <uid>
+func (sess *Session) SetUID(uid string) {
 	sess.uid = uid
 }
 

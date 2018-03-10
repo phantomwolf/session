@@ -33,21 +33,21 @@ func (repo *repository) Remove(id string) error {
 }
 
 func (repo *repository) Update(sess *Session) error {
-	if err := repo.storage.Save(sess.Id(), sess.Uid(), sess.ToMap()); err != nil {
-		log.Debugf("[repository.go:Update] Updating session %s failed: %s\n", sess.Id(), err.Error())
+	if err := repo.storage.Save(sess.ID(), sess.UID(), sess.ToMap()); err != nil {
+		log.Debugf("[repository.go:Update] Updating session %s failed: %s\n", sess.ID(), err.Error())
 		return err
 	}
 	return nil
 }
 
 func (repo *repository) Add(sess *Session) error {
-	id := sess.Id()
+	id := sess.ID()
 	if repo.storage.Exists(id) {
 		log.Debugf("[repository.go:Add] Session %s already exists\n", id)
 		return ErrSessionExists
 	}
 
-	if err := repo.storage.Save(id, sess.Uid(), sess.ToMap()); err != nil {
+	if err := repo.storage.Save(id, sess.UID(), sess.ToMap()); err != nil {
 		log.Debugf("[repository.go:Add] Session %s saving failure: %s\n", id, err.Error())
 		return err
 	}
