@@ -38,7 +38,7 @@ func (rs *redisStorage) Load(key string) (map[string]string, error) {
 
 // Save saves a hash to redis. If user already has MaxSessionNum sessions,
 // remove the oldest one
-func (rs *redisStorage) Save(key string, uid string data map[string]interface{}) error {
+func (rs *redisStorage) Save(key string, uid string, data map[string]interface{}) error {
 	if len, err := rs.client.LLen(uid).Result(); err != nil {
 		log.Debugf("[redis_storage.go:Save] LLEN %s failed: %s\n", uid, err.Error())
 		return err
@@ -49,7 +49,7 @@ func (rs *redisStorage) Save(key string, uid string data map[string]interface{})
 			return err
 		}
 		// The session might already be removed.
-		// No need to check result.
+		// No need to check the result.
 		rs.Delete(id)
 	}
 	// Add session id to user's session list

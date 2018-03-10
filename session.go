@@ -15,6 +15,7 @@ const (
 
 var (
 	ErrSessionMissingUid = errors.New("User id missing in session")
+	ErrSessionExists     = errors.New("Session already exists")
 )
 
 type Session struct {
